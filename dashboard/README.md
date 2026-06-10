@@ -17,7 +17,7 @@ npm run dev      # http://localhost:5173
 dashboard/
   src/
     main.jsx      — точка входа
-    App.jsx       — весь UI (три таба)
+    App.jsx       — весь UI (два таба: уровни зрелости, конкуренты)
     data.js       — DEALS, OPEN_DEALS, LEVEL_META, COMPETITORS
     index.css     — @tailwind директивы
 ```
@@ -27,6 +27,28 @@ dashboard/
 - **Данные сделок** — `src/data.js`, массив `DEALS`.
 - **Цвета уровней зрелости** — `src/data.js`, поле `color` в `LEVEL_META`.
 - **Справочник конкурентов** — `src/data.js`, объект `COMPETITORS`.
+
+## Как добавить сделку вручную
+
+Добавьте объект в массив `DEALS` в `src/data.js`:
+
+```js
+{
+  id: 346987,                       // Deal-ID из Pipedrive
+  company: "Название компании",
+  industry: "fashion",              // fashion | food | beauty | retail | b2b | education | medical | other
+  businessModel: "Онлайн-магазин",  // или null
+  emailLevel: "L0",                 // L0 | L1 | L2 | L3 | null (null рендерится как "??")
+  emailCompetitor: "Битрикс",       // "Неизвестно", если неизвестно
+  loyaltyLevel: "L3",               // L0 | L1 | L2 | L3 | null
+  loyaltyCompetitor: "Maxma",       // "Ничего" / "Неизвестно" допустимы
+  competitors: ["Maxma"],           // uniq, без "Ничего" и "Неизвестно"
+  pipedriveUrl: "https://mindbox.pipedrive.com/deal/346987",
+}
+```
+
+Уровни сделки берутся из `emailLevel` / `loyaltyLevel`; счётчик «N deals» в шапке
+и все графики пересчитываются автоматически.
 
 ## Деплой на Vercel
 
