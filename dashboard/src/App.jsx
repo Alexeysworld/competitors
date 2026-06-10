@@ -12,16 +12,7 @@ import {
   Pie,
   Legend,
 } from 'recharts';
-import {
-  Layers,
-  Swords,
-  TrendingDown,
-  Search,
-  ExternalLink,
-  Check,
-  X,
-  Quote,
-} from 'lucide-react';
+import { Layers, Swords, Search, ExternalLink, Check, X } from 'lucide-react';
 import { DEALS, LEVEL_META, COMPETITORS } from './data.js';
 
 // ---------------------------------------------------------------------------
@@ -31,44 +22,10 @@ const LEVEL_ORDER = ['L0', 'L1', 'L2', 'L3'];
 const UNKNOWN_KEY = '??';
 const UNKNOWN_COLOR = '#cbd5e1';
 
-const REVENUE_BUCKETS = [
-  { key: '<30M', label: '< 30M', test: (r) => bucketOf(r) === '<30M' },
-  { key: '30-100M', label: '30–100M', test: (r) => bucketOf(r) === '30-100M' },
-  { key: '100M+', label: '100M+', test: (r) => bucketOf(r) === '100M+' },
-];
-
-// Нормализуем строку выручки в один из трёх бакетов (или null).
-function bucketOf(revenue) {
-  if (!revenue) return null;
-  const r = String(revenue).toLowerCase();
-  if (r.includes('100') || r.includes('млрд') || r.includes('b')) {
-    // "100-300M", "100M+", "1B" → крупные
-    if (r.includes('30-100') || r.includes('30–100')) return '30-100M';
-    return '100M+';
-  }
-  if (r.includes('30')) return '30-100M';
-  return '<30M';
-}
-
-function formatValue(value) {
-  if (value == null) return '—';
-  return new Intl.NumberFormat('ru-RU').format(value) + ' ₽/мес';
-}
-
 function levelColor(segment, level) {
   if (!level || level === UNKNOWN_KEY) return UNKNOWN_COLOR;
   return LEVEL_META[segment]?.[level]?.color ?? UNKNOWN_COLOR;
 }
-
-// Цитаты для таба «Ценовой барьер» (обобщённые, не привязаны к конкретным сделкам).
-const PRICE_QUOTES = [
-  'Нам предложили практически то же самое в 2 раза дешевле.',
-  'Бюджет не тянет вашу подписку — у конкурента ценник в 3 раза ниже.',
-  'За эти деньги мы получаем мобильное приложение в коробке у другого вендора.',
-  'Решили начать с более простого и дешёвого инструмента, к вам вернёмся позже.',
-  'Стоимость владения за год получается неподъёмной для нашего оборота.',
-  'Выбрали платформу, где программа лояльности уже включена в цену.',
-];
 
 // ---------------------------------------------------------------------------
 // Мелкие UI-компоненты
@@ -135,10 +92,7 @@ function MaturityTab() {
     [distribution, segment]
   );
 
-  const pieData = useMemo(
-    () => barData.filter((d) => d.count > 0),
-    [barData]
-  );
+  const pieData = useMemo(() => barData.filter((d) => d.count > 0), [barData]);
 
   const total = DEALS.length;
 
@@ -296,7 +250,6 @@ function MaturityTab() {
                     <th className="px-5 py-2.5 font-medium">Компания</th>
                     <th className="px-5 py-2.5 font-medium">Уровень</th>
                     <th className="px-5 py-2.5 font-medium">Конкурент</th>
-                    <th className="px-5 py-2.5 font-medium">Сумма</th>
                     <th className="px-5 py-2.5 font-medium">Pipedrive</th>
                   </tr>
                 </thead>
@@ -315,9 +268,6 @@ function MaturityTab() {
                       </td>
                       <td className="px-5 py-2.5 text-slate-600">
                         {d[competitorKey] || 'Неизвестно'}
-                      </td>
-                      <td className="px-5 py-2.5 text-slate-600">
-                        {formatValue(d.value)}
                       </td>
                       <td className="px-5 py-2.5">
                         <a
@@ -475,116 +425,11 @@ function CompetitorsTab() {
 }
 
 // ---------------------------------------------------------------------------
-// Таб 3: Ценовой барьер
-// ---------------------------------------------------------------------------
-function PriceTab() {
-  const isEmpty = DEALS.length === 0;
-
-  const pricePct = useMemo(() => {
-    if (DEALS.length === 0) return 0;
-    const n = DEALS.filter((d) => d.priceReason).length;
-    return Math.round((n / DEALS.length) * 100);
-  }, []);
-
-  const priceCount = useMemo(
-    () => DEALS.filter((d) => d.priceReason).length,
-    []
-  );
-
-  const bucketData = useMemo(() => {
-    return REVENUE_BUCKETS.map((b) => {
-      const inBucket = DEALS.filter((d) => b.test(d.revenue));
-      const withPrice = inBucket.filter((d) => d.priceReason).length;
-      const pct =
-        inBucket.length > 0
-          ? Math.round((withPrice / inBucket.length) * 100)
-          : 0;
-      return {
-        bucket: b.label,
-        pct,
-        total: inBucket.length,
-        withPrice,
-      };
-    });
-  }, []);
-
-  return (
-    <div className="space-y-6">
-      {isEmpty ? (
-        <Placeholder>Загрузите данные</Placeholder>
-      ) : (
-        <>
-          {/* KPI */}
-          <Card className="p-8 text-center">
-            <div className="text-6xl font-semibold text-slate-900">
-              {pricePct}%
-            </div>
-            <div className="mt-2 text-sm text-slate-500">
-              сделок проиграно с упоминанием цены ({priceCount} из{' '}
-              {DEALS.length})
-            </div>
-          </Card>
-
-          {/* Bar chart по revenue-бакетам */}
-          <Card className="p-5">
-            <h3 className="mb-4 text-sm font-semibold text-slate-700">
-              Доля сделок с ценовым барьером по выручке клиента
-            </h3>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={bucketData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="bucket" tick={{ fontSize: 12 }} />
-                <YAxis
-                  domain={[0, 100]}
-                  tickFormatter={(v) => `${v}%`}
-                  tick={{ fontSize: 12 }}
-                />
-                <Tooltip
-                  cursor={{ fill: '#f8fafc' }}
-                  formatter={(v, _n, p) => [
-                    `${v}% (${p.payload.withPrice} из ${p.payload.total})`,
-                    'ценовой барьер',
-                  ]}
-                />
-                <Bar
-                  dataKey="pct"
-                  fill="#f59e0b"
-                  radius={[4, 4, 0, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          </Card>
-
-          {/* Цитаты */}
-          <Card className="p-5">
-            <h3 className="mb-4 text-sm font-semibold text-slate-700">
-              Что говорят клиенты
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {PRICE_QUOTES.map((q, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 rounded-lg border border-slate-100 bg-slate-50 p-4"
-                >
-                  <Quote className="mt-0.5 h-4 w-4 shrink-0 text-slate-300" />
-                  <p className="text-sm italic text-slate-600">{q}</p>
-                </div>
-              ))}
-            </div>
-          </Card>
-        </>
-      )}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Корневой компонент
 // ---------------------------------------------------------------------------
 const TABS = [
   { key: 'maturity', label: 'Уровни зрелости', icon: Layers },
   { key: 'competitors', label: 'Конкуренты', icon: Swords },
-  { key: 'price', label: 'Ценовой барьер', icon: TrendingDown },
 ];
 
 export default function App() {
@@ -627,7 +472,6 @@ export default function App() {
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         {tab === 'maturity' && <MaturityTab />}
         {tab === 'competitors' && <CompetitorsTab />}
-        {tab === 'price' && <PriceTab />}
       </main>
     </div>
   );
